@@ -19,7 +19,18 @@ db.version(2).stores({
   settings: 'key',
 });
 
-// ─── Meals ───
+// Version 3: no schema changes needed — nutrition is a non-indexed field on moodEntries
+// meals table kept for backward compatibility (existing data preserved)
+db.version(3).stores({
+  meals: '++id, date, meal, name',
+  exercises: '++id, date, name',
+  moodEntries: 'date',
+  sleepEntries: 'date',
+  weightEntries: 'date',
+  settings: 'key',
+});
+
+// ─── Meals (legacy — preserved for existing data / export) ───
 
 export async function addMeal(date, meal, name, calories, protein, carbs, fat) {
   return db.meals.add({ date, meal, name, calories, protein, carbs, fat, createdAt: new Date().toISOString() });
@@ -47,10 +58,10 @@ export async function deleteExercise(id) {
   return db.exercises.delete(id);
 }
 
-// ─── Mood ───
+// ─── Mood (now includes optional nutrition rating) ───
 
-export async function saveMoodEntry(date, level, tags, notes) {
-  return db.moodEntries.put({ date, level, tags, notes, updatedAt: new Date().toISOString() });
+export async function saveMoodEntry(date, level, tags, notes, nutrition) {
+  return db.moodEntries.put({ date, level, tags, notes, nutrition, updatedAt: new Date().toISOString() });
 }
 
 export async function getMoodEntry(date) {
@@ -104,6 +115,16 @@ export async function setSetting(key, value) {
   return db.settings.put({ key, value });
 }
 
+// ─── Persistent Storage ───
+
+export async function requestPersistentStorage() {
+  if (navigator.storage && navigator.storage.persist) {
+    const granted = await navigator.storage.persist();
+    return granted;
+  }
+  return false;
+}
+
 // ─── Export ───
 
 export async function exportAllData() {
@@ -115,7 +136,9 @@ export async function exportAllData() {
     db.weightEntries.toArray(),
     db.settings.toArray(),
   ]);
-  return { version: 2, exportedAt: new Date().toISOString(), meals, exercises, moods, sleep, weight, settings };
+  // Record export timestamp
+  await setSetting('lastExportDate', new Date().toISOString());
+  return { version: 3, exportedAt: new Date().toISOString(), meals, exercises, moods, sleep, weight, settings };
 }
 
 export async function importData(data) {
@@ -151,7 +174,6 @@ export async function importDaylioCSV(csvText) {
     const tags = activitiesIdx >= 0 ? (cols[activitiesIdx] || '').replace(/"/g, '').split('|').map(t => t.trim()).filter(Boolean) : [];
     const notes = notesIdx >= 0 ? (cols[notesIdx] || '').replace(/"/g, '') : '';
 
-    // Normalize date to YYYY-MM-DD
     const normalized = normalizeDate(date);
     if (normalized) {
       await db.moodEntries.put({ date: normalized, level, tags, notes, updatedAt: new Date().toISOString() });
@@ -176,7 +198,6 @@ function parseCSVLine(line) {
 }
 
 function normalizeDate(dateStr) {
-  // Handle YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY patterns
   const iso = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (iso) return `${iso[1]}-${iso[2].padStart(2,'0')}-${iso[3].padStart(2,'0')}`;
   const us = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fmt } from './helpers';
-import { getMealsForDate, getExercisesForDate, getMoodEntry, getSleepEntry, getWeightEntry } from './db';
+import { getExercisesForDate, getMoodEntry, getSleepEntry, getWeightEntry, requestPersistentStorage } from './db';
+import { initNotifications } from './notifications';
 import Calendar from './components/Calendar';
 import Dashboard from './components/Dashboard';
-import Calories from './components/Calories';
 import Workout from './components/Workout';
 import Sleep from './components/Sleep';
 import Weight from './components/Weight';
@@ -12,7 +12,6 @@ import ExportView from './components/Export';
 
 const TABS = [
   { id: 'dashboard', label: 'Hub', icon: '◉' },
-  { id: 'calories', label: 'Fuel', icon: '◎' },
   { id: 'workout', label: 'Train', icon: '△' },
   { id: 'weight', label: 'Weight', icon: '⊘' },
   { id: 'sleep', label: 'Sleep', icon: '◐' },
@@ -25,12 +24,11 @@ export default function App() {
   const [showCalendar, setShowCalendar] = useState(false);
 
   // Data state
-  const [meals, setMeals] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [moodEntry, setMoodEntry] = useState(null);
   const [sleepEntry, setSleepEntry] = useState(null);
   const [weightEntry, setWeightEntry] = useState(null);
-  const [allExercises, setAllExercises] = useState([]); // for calendar dots
+  const [allExercises, setAllExercises] = useState([]);
   const [reloadKey, setReloadKey] = useState(0);
 
   const dateKey = fmt(selectedDate);
@@ -41,18 +39,25 @@ export default function App() {
     if (date) setSelectedDate(date);
   };
 
+  // Init: request persistent storage + notifications
+  useEffect(() => {
+    requestPersistentStorage().then(granted => {
+      if (granted) console.log('Persistent storage granted');
+    });
+    initNotifications().then(ok => {
+      if (ok) console.log('Notifications enabled');
+    });
+  }, []);
+
   // Load data for selected date
   useEffect(() => {
-    getMealsForDate(dateKey).then(setMeals);
-    getExercisesForDate(dateKey).then(r => {
-      setExercises(r); // current date exercises
-    });
+    getExercisesForDate(dateKey).then(setExercises);
     getMoodEntry(dateKey).then(setMoodEntry);
     getSleepEntry(dateKey).then(setSleepEntry);
     getWeightEntry(dateKey).then(setWeightEntry);
   }, [dateKey, reloadKey]);
 
-  // Load all exercises for calendar dots (lightweight)
+  // Load all exercises for calendar dots
   useEffect(() => {
     import('./db').then(({ db }) => {
       db.exercises.toArray().then(setAllExercises);
@@ -82,10 +87,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <Dashboard setActiveTab={setActiveTab} selectedDate={selectedDate}
             setShowCalendar={setShowCalendar} exercises={allExercises}
-            meals={meals} moodEntry={moodEntry} sleepEntry={sleepEntry} weightEntry={weightEntry} />
-        )}
-        {activeTab === 'calories' && (
-          <Calories meals={meals} selectedDate={selectedDate} reload={reload} />
+            moodEntry={moodEntry} sleepEntry={sleepEntry} weightEntry={weightEntry} />
         )}
         {activeTab === 'workout' && (
           <Workout selectedDate={selectedDate} setShowCalendar={setShowCalendar}

@@ -39,6 +39,17 @@ export const MOODS = [
   { level: 1, emoji: '😞', label: 'Rough', color: '#f87171' },
 ];
 
+// ─── Nutrition (quick daily rating in mood check-in) ───
+
+export const NUTRITION_LEVELS = [
+  { level: 4, emoji: '🥗', label: 'Great', color: '#4ade80' },
+  { level: 3, emoji: '🍽', label: 'Good', color: '#a3e635' },
+  { level: 2, emoji: '🍕', label: 'Fair', color: '#facc15' },
+  { level: 1, emoji: '🍫', label: 'Poor', color: '#fb923c' },
+];
+
+// ─── Sleep ───
+
 export const QUALITY_LABELS = [
   { level: 1, label: 'Terrible', color: '#f87171', icon: '😫' },
   { level: 2, label: 'Poor', color: '#fb923c', icon: '😣' },
@@ -46,6 +57,8 @@ export const QUALITY_LABELS = [
   { level: 4, label: 'Good', color: '#a3e635', icon: '😌' },
   { level: 5, label: 'Excellent', color: '#4ade80', icon: '😴' },
 ];
+
+// ─── Activities ───
 
 export const DEFAULT_ACTIVITY_TAGS = ['Work', 'Exercise', 'Social', 'Music', 'Reading', 'Outdoors', 'Cooking', 'Rest', 'Creative', 'Errands'];
 

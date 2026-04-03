@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getMonthDays, sameDay, MONTH_NAMES, DAY_ABBR, fmt } from '../helpers';
-import { getSessionForDate, getPhase, PHASES } from '../data/cycling';
+import { getSessionForDate, getPhase, getTypeColor, TYPES, PHASES } from '../data/training';
 
 export default function CalendarModal({ selectedDate, onSelect, onClose, exercises }) {
   const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
@@ -10,6 +10,10 @@ export default function CalendarModal({ selectedDate, onSelect, onClose, exercis
 
   const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); } else setViewMonth(viewMonth - 1); };
   const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); } else setViewMonth(viewMonth + 1); };
+
+  // Determine if we're viewing new program months (Apr 2026+) or legacy
+  const viewingDate = new Date(viewYear, viewMonth, 15);
+  const isNewProgram = viewingDate >= new Date(2026, 2, 30);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -34,7 +38,7 @@ export default function CalendarModal({ selectedDate, onSelect, onClose, exercis
             const session = getSessionForDate(day);
             const dateKey = fmt(day);
             const hasExtra = exercises.some(e => e.date === dateKey);
-            const phase = session ? getPhase(session.week) : null;
+            const dotColor = session ? getTypeColor(session) : null;
             const isPast = day < today && !isToday;
 
             return (
@@ -49,7 +53,7 @@ export default function CalendarModal({ selectedDate, onSelect, onClose, exercis
                   color: isSelected ? '#818cf8' : isPast ? 'rgba(255,255,255,0.3)' : '#fff'
                 }}>{day.getDate()}</span>
                 <div style={{ display: 'flex', gap: 2 }}>
-                  {session && <div style={{ width: 4, height: 4, borderRadius: '50%', background: phase.color, opacity: isPast ? 0.4 : 1 }} />}
+                  {session && <div style={{ width: 4, height: 4, borderRadius: '50%', background: dotColor, opacity: isPast ? 0.4 : 1 }} />}
                   {hasExtra && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#c084fc', opacity: isPast ? 0.4 : 1 }} />}
                 </div>
               </button>
@@ -58,12 +62,23 @@ export default function CalendarModal({ selectedDate, onSelect, onClose, exercis
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
-          {Object.entries(PHASES).map(([id, p]) => (
-            <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: p.color }} />
-              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{p.name}</span>
-            </div>
-          ))}
+          {isNewProgram ? (
+            <>
+              {Object.entries(TYPES).map(([id, t]) => (
+                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: t.color }} />
+                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{t.name}</span>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#38bdf8' }} />
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>Cycling</span>
+              </div>
+            </>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#c084fc' }} />
             <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>Other exercise</span>

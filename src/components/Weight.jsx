@@ -5,7 +5,7 @@ import { saveWeightEntry, getAllWeightEntries, getSetting, setSetting } from '..
 function TrendChart({ entries, unit }) {
   if (entries.length < 2) return null;
 
-  const recent = entries.slice(-30); // last 30 entries
+  const recent = entries.slice(-30);
   const weights = recent.map(e => e.weight);
   const min = Math.min(...weights) - 2;
   const max = Math.max(...weights) + 2;
@@ -18,10 +18,8 @@ function TrendChart({ entries, unit }) {
   const toX = (i) => padX + (i / (recent.length - 1)) * plotW;
   const toY = (w) => padY + plotH - ((w - min) / range) * plotH;
 
-  // Raw data line
   const rawPath = recent.map((e, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(e.weight).toFixed(1)}`).join(' ');
 
-  // 7-day moving average
   const ma = [];
   for (let i = 0; i < recent.length; i++) {
     const window = recent.slice(Math.max(0, i - 6), i + 1);
@@ -29,11 +27,9 @@ function TrendChart({ entries, unit }) {
   }
   const maPath = ma.map((w, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(w).toFixed(1)}`).join(' ');
 
-  // Y axis labels
   const steps = 4;
   const yLabels = Array.from({ length: steps + 1 }, (_, i) => min + (range / steps) * i);
 
-  // Net change
   const first = recent[0].weight;
   const last = recent[recent.length - 1].weight;
   const delta = last - first;
@@ -49,7 +45,6 @@ function TrendChart({ entries, unit }) {
       </div>
       <div className="card" style={{ padding: '12px 8px', overflow: 'hidden' }}>
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-          {/* Grid lines */}
           {yLabels.map((v, i) => (
             <g key={i}>
               <line x1={padX} x2={W - 10} y1={toY(v)} y2={toY(v)} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
@@ -59,7 +54,6 @@ function TrendChart({ entries, unit }) {
             </g>
           ))}
 
-          {/* Area fill under MA */}
           <path d={`${maPath} L${toX(recent.length - 1)},${H - padY} L${toX(0)},${H - padY} Z`}
             fill="url(#areaGrad)" opacity="0.3" />
 
@@ -70,26 +64,20 @@ function TrendChart({ entries, unit }) {
             </linearGradient>
           </defs>
 
-          {/* Raw data */}
           <path d={rawPath} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />
-
-          {/* Moving average */}
           <path d={maPath} fill="none" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" />
 
-          {/* Data points */}
           {recent.map((e, i) => (
             <circle key={i} cx={toX(i)} cy={toY(e.weight)} r={i === recent.length - 1 ? 4 : 2}
               fill={i === recent.length - 1 ? '#818cf8' : 'rgba(255,255,255,0.2)'} />
           ))}
 
-          {/* Latest value label */}
           <text x={toX(recent.length - 1)} y={toY(last) - 10} textAnchor="middle"
             fill="#818cf8" fontSize="11" fontWeight="600" fontFamily="DM Mono, monospace">
             {last.toFixed(1)}
           </text>
         </svg>
 
-        {/* Legend */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 16, height: 2, background: 'rgba(255,255,255,0.15)', borderRadius: 1 }} />
@@ -129,7 +117,6 @@ export default function Weight({ weightEntry, selectedDate, reload }) {
     setSaved(false);
   }, [dateKey, weightEntry]);
 
-  // Reload all entries when saved
   useEffect(() => {
     if (saved) getAllWeightEntries().then(setAllEntries);
   }, [saved]);
@@ -148,14 +135,12 @@ export default function Weight({ weightEntry, selectedDate, reload }) {
     reload();
   };
 
-  // Stats
   const latestEntry = allEntries.length > 0 ? allEntries[allEntries.length - 1] : null;
   const weekAgo = fmt(addDays(selectedDate, -7));
   const weekEntry = allEntries.find(e => e.date === weekAgo);
   const monthAgo = fmt(addDays(selectedDate, -30));
   const monthEntry = allEntries.find(e => e.date <= monthAgo);
 
-  // 7-day moving average for the latest entry
   const last7 = allEntries.slice(-7);
   const movingAvg = last7.length > 0 ? (last7.reduce((s, e) => s + e.weight, 0) / last7.length) : null;
 
@@ -168,7 +153,6 @@ export default function Weight({ weightEntry, selectedDate, reload }) {
         </div>
       </div>
 
-      {/* Current / latest display */}
       {latestEntry && (
         <div style={{ textAlign: 'center' }}>
           <span className="mono" style={{ fontSize: 48, fontWeight: 700, color: '#fff' }}>
@@ -191,7 +175,6 @@ export default function Weight({ weightEntry, selectedDate, reload }) {
         </div>
       )}
 
-      {/* Quick stats */}
       {allEntries.length > 1 && (
         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
           {weekEntry && (() => {
@@ -221,10 +204,8 @@ export default function Weight({ weightEntry, selectedDate, reload }) {
         </div>
       )}
 
-      {/* Trend chart */}
       <TrendChart entries={allEntries} unit={unit} />
 
-      {/* Input */}
       <div>
         <div className="label-xs" style={{ marginBottom: 6, paddingLeft: 4, fontWeight: 600 }}>Log Weight</div>
         <div style={{ display: 'flex', gap: 8 }}>

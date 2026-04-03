@@ -26,35 +26,30 @@ export default function ExportView() {
       const data = await exportAllData();
       const sections = [];
 
-      // Meals CSV
       if (data.meals.length) {
         sections.push('--- MEALS ---');
         sections.push('date,meal,name,calories,protein,carbs,fat');
         data.meals.forEach(m => sections.push(`${m.date},${m.meal},"${m.name}",${m.calories},${m.protein},${m.carbs},${m.fat}`));
       }
 
-      // Exercises CSV
       if (data.exercises.length) {
         sections.push('\n--- EXERCISES ---');
         sections.push('date,name,icon,duration,notes');
         data.exercises.forEach(e => sections.push(`${e.date},"${e.name}",${e.icon},${e.duration},"${e.notes || ''}"`));
       }
 
-      // Mood CSV
       if (data.moods.length) {
         sections.push('\n--- MOOD ---');
-        sections.push('date,level,tags,notes');
-        data.moods.forEach(m => sections.push(`${m.date},${m.level},"${(m.tags || []).join('|')}","${m.notes || ''}"`));
+        sections.push('date,level,nutrition,tags,notes');
+        data.moods.forEach(m => sections.push(`${m.date},${m.level},${m.nutrition || ''},"${(m.tags || []).join('|')}","${m.notes || ''}"`));
       }
 
-      // Sleep CSV
       if (data.sleep.length) {
         sections.push('\n--- SLEEP ---');
         sections.push('date,bedtime,waketime,quality,interruptions,notes');
         data.sleep.forEach(s => sections.push(`${s.date},${s.bedtime},${s.waketime},${s.quality},${s.interruptions},"${s.notes || ''}"`));
       }
 
-      // Weight CSV
       if (data.weight?.length) {
         sections.push('\n--- WEIGHT ---');
         sections.push('date,weight,unit,notes');
@@ -118,7 +113,6 @@ export default function ExportView() {
         }}>{status}</div>
       )}
 
-      {/* Export */}
       <div>
         <div className="label-xs" style={{ fontWeight: 600, marginBottom: 10, paddingLeft: 4 }}>Export</div>
         <button onClick={handleExportJSON} className="card" style={{ width: '100%', padding: '16px 18px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
@@ -137,7 +131,6 @@ export default function ExportView() {
         </button>
       </div>
 
-      {/* Import */}
       <div>
         <div className="label-xs" style={{ fontWeight: 600, marginBottom: 10, paddingLeft: 4 }}>Import</div>
 
@@ -160,11 +153,10 @@ export default function ExportView() {
         </label>
       </div>
 
-      {/* Info */}
       <div className="card" style={{ padding: '14px 18px' }}>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
-          All data is stored locally on this device using IndexedDB.
-          Regular backups are recommended — export JSON weekly and save to your Mac via AirDrop or Files.
+          All data is stored locally on this device using IndexedDB with persistent storage enabled.
+          Regular backups are recommended — export JSON every couple of weeks and save via AirDrop or Files.
         </div>
       </div>
     </div>

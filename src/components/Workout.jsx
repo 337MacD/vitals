@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { sameDay, addDays, fmt, EXERCISE_PRESETS, ICON_OPTIONS, DAY_ABBR_MON } from '../helpers';
-import { getSessionForDate, getPhase } from '../data/cycling';
+import { getSessionForDate, getPhase, getTypeColor, getTypeIcon } from '../data/training';
 import { addExercise, deleteExercise, getSetting, setSetting } from '../db';
 
 function AddExerciseModal({ date, onClose, onSave, customExercises }) {
@@ -17,7 +17,6 @@ function AddExerciseModal({ date, onClose, onSave, customExercises }) {
     const ex = mode === 'pick' && selected ? selected : { name: customName.trim(), icon: customIcon, category: 'custom' };
     if (!ex.name) return;
     await addExercise(date, { name: ex.name, icon: ex.icon, category: ex.category || 'custom', duration: parseInt(duration) || 0, notes });
-    // Save custom exercise for future use
     if (mode === 'custom' && ex.name && !customExercises.find(c => c.name === ex.name)) {
       const updated = [...customExercises, { name: ex.name, icon: ex.icon, category: 'custom' }];
       await setSetting('customExercises', updated);
@@ -92,7 +91,7 @@ function AddExerciseModal({ date, onClose, onSave, customExercises }) {
 
 export default function Workout({ selectedDate, setShowCalendar, exercises, reload }) {
   const session = getSessionForDate(selectedDate);
-  const phase = session ? getPhase(session.week) : null;
+  const phase = session ? getPhase(session) : null;
   const [showAddModal, setShowAddModal] = useState(false);
   const [customExercises, setCustomExercises] = useState([]);
   const dateKey = fmt(selectedDate);
@@ -124,18 +123,18 @@ export default function Workout({ selectedDate, setShowCalendar, exercises, relo
           const s = getSessionForDate(d);
           const hasExtra = exercises.some(e => e.date === fmt(d));
           const isSelected = sameDay(d, selectedDate);
-          const p = s ? getPhase(s.week) : null;
+          const typeColor = s ? getTypeColor(s) : null;
           return (
             <button key={i} onClick={() => setShowCalendar(true)} style={{
               width: 42, height: 58, borderRadius: 12, cursor: 'pointer',
-              background: isSelected ? (p ? p.color + '22' : hasExtra ? 'rgba(192,132,252,0.12)' : 'rgba(255,255,255,0.06)') : 'rgba(255,255,255,0.02)',
-              border: isSelected ? `1.5px solid ${p ? p.color + '55' : hasExtra ? 'rgba(192,132,252,0.3)' : 'rgba(255,255,255,0.15)'}` : '1px solid rgba(255,255,255,0.04)',
+              background: isSelected ? (s ? typeColor + '22' : hasExtra ? 'rgba(192,132,252,0.12)' : 'rgba(255,255,255,0.06)') : 'rgba(255,255,255,0.02)',
+              border: isSelected ? `1.5px solid ${s ? typeColor + '55' : hasExtra ? 'rgba(192,132,252,0.3)' : 'rgba(255,255,255,0.15)'}` : '1px solid rgba(255,255,255,0.04)',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3
             }}>
               <span style={{ fontSize: 10, color: isSelected ? '#fff' : 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{DAY_ABBR_MON[i]}</span>
               <span style={{ fontSize: 13, color: isSelected ? '#fff' : 'rgba(255,255,255,0.2)' }}>{d.getDate()}</span>
               <div style={{ display: 'flex', gap: 2 }}>
-                {s && <div style={{ width: 4, height: 4, borderRadius: '50%', background: p.color }} />}
+                {s && <div style={{ width: 4, height: 4, borderRadius: '50%', background: typeColor }} />}
                 {hasExtra && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#c084fc' }} />}
               </div>
             </button>
@@ -145,13 +144,13 @@ export default function Workout({ selectedDate, setShowCalendar, exercises, relo
 
       {/* Scheduled session */}
       {session && (
-        <div style={{ background: phase.color + '0a', border: `1px solid ${phase.color}18`, borderRadius: 16, padding: 18 }}>
-          <div style={{ fontSize: 10, color: phase.color, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>
-            🚴 Scheduled · Week {session.week} · {phase.name}
+        <div style={{ background: getTypeColor(session) + '0a', border: `1px solid ${getTypeColor(session)}18`, borderRadius: 16, padding: 18 }}>
+          <div style={{ fontSize: 10, color: getTypeColor(session), textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>
+            {getTypeIcon(session)} Scheduled · {session.isNew ? `Cycle ${session.cycle} · Wk ${session.week} · ${phase.name}` : `Week ${session.week} · ${phase.name}`}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{session.name}</span>
-            <span className="badge" style={{ background: phase.color + '22', color: phase.color }}>{session.intensity}</span>
+            <span className="badge" style={{ background: getTypeColor(session) + '22', color: getTypeColor(session) }}>{session.intensity}</span>
           </div>
           <div style={{ marginBottom: session.notes ? 10 : 0 }}>
             <span className="mono" style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>⏱ {session.duration} min</span>
@@ -186,7 +185,7 @@ export default function Workout({ selectedDate, setShowCalendar, exercises, relo
         <div style={{ textAlign: 'center', padding: '30px 0' }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>🧘</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>Rest Day</div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>No cycling scheduled. Add other exercise below.</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>No training scheduled. Add other exercise below.</div>
         </div>
       )}
 

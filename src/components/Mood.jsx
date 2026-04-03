@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MOODS, DEFAULT_ACTIVITY_TAGS, fmt } from '../helpers';
+import { MOODS, NUTRITION_LEVELS, DEFAULT_ACTIVITY_TAGS, fmt } from '../helpers';
 import { saveMoodEntry, getSetting, setSetting } from '../db';
 
 function TagManager({ tags, setTags, onClose }) {
@@ -42,6 +42,7 @@ function TagManager({ tags, setTags, onClose }) {
 export default function Mood({ moodEntry, selectedDate, reload }) {
   const dateKey = fmt(selectedDate);
   const [selectedMood, setSelectedMood] = useState(null);
+  const [selectedNutrition, setSelectedNutrition] = useState(null);
   const [selectedTags, setSelectedTags] = useState(new Set());
   const [notes, setNotes] = useState('');
   const [activityTags, setActivityTags] = useState([...DEFAULT_ACTIVITY_TAGS]);
@@ -57,10 +58,11 @@ export default function Mood({ moodEntry, selectedDate, reload }) {
   useEffect(() => {
     if (moodEntry) {
       setSelectedMood(moodEntry.level);
+      setSelectedNutrition(moodEntry.nutrition || null);
       setSelectedTags(new Set(moodEntry.tags || []));
       setNotes(moodEntry.notes || '');
     } else {
-      setSelectedMood(null); setSelectedTags(new Set()); setNotes('');
+      setSelectedMood(null); setSelectedNutrition(null); setSelectedTags(new Set()); setNotes('');
     }
     setSaved(false);
   }, [dateKey, moodEntry]);
@@ -78,7 +80,7 @@ export default function Mood({ moodEntry, selectedDate, reload }) {
 
   const handleSave = async () => {
     if (!selectedMood) return;
-    await saveMoodEntry(dateKey, selectedMood, [...selectedTags], notes);
+    await saveMoodEntry(dateKey, selectedMood, [...selectedTags], notes, selectedNutrition);
     setSaved(true);
     reload();
   };
@@ -94,6 +96,7 @@ export default function Mood({ moodEntry, selectedDate, reload }) {
         </div>
       </div>
 
+      {/* Mood selector */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
         {MOODS.map(m => (
           <button key={m.level} onClick={() => setSelectedMood(m.level)} style={{
@@ -109,6 +112,26 @@ export default function Mood({ moodEntry, selectedDate, reload }) {
         ))}
       </div>
 
+      {/* Nutrition rating */}
+      <div>
+        <div className="label-xs" style={{ marginBottom: 10, paddingLeft: 4, fontWeight: 600 }}>Nutrition Today</div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          {NUTRITION_LEVELS.map(n => (
+            <button key={n.level} onClick={() => setSelectedNutrition(n.level)} style={{
+              width: 68, height: 68, borderRadius: 16, cursor: 'pointer',
+              background: selectedNutrition === n.level ? `${n.color}18` : 'rgba(255,255,255,0.03)',
+              border: selectedNutrition === n.level ? `2px solid ${n.color}55` : '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+              transform: selectedNutrition === n.level ? 'scale(1.08)' : 'scale(1)', transition: 'all 0.2s'
+            }}>
+              <span style={{ fontSize: 22 }}>{n.emoji}</span>
+              <span style={{ fontSize: 9, fontWeight: 600, color: selectedNutrition === n.level ? n.color : 'rgba(255,255,255,0.3)' }}>{n.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Activities */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, padding: '0 4px' }}>
           <span className="label-xs" style={{ fontWeight: 600 }}>Activities</span>
@@ -126,6 +149,7 @@ export default function Mood({ moodEntry, selectedDate, reload }) {
         </div>
       </div>
 
+      {/* Notes */}
       <div>
         <div className="label-xs" style={{ marginBottom: 10, paddingLeft: 4, fontWeight: 600 }}>Notes</div>
         <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="How was your day?..." style={{
